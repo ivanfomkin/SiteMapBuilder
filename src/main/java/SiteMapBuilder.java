@@ -8,6 +8,8 @@ import java.util.concurrent.RecursiveTask;
 public class SiteMapBuilder extends RecursiveTask<Set<String>> {
     private final String url;
 
+    private static Set<String> allUrl = new HashSet<>();
+
     public SiteMapBuilder(String url) {
         this.url = url;
     }
@@ -17,9 +19,16 @@ public class SiteMapBuilder extends RecursiveTask<Set<String>> {
         Set<String> result = new TreeSet<>(); //Будем тут хранить результат
         List<SiteMapBuilder> subTasks = new LinkedList<>(); //Лист подзаданий
         for (String subLink : getPageLinks(url)) { //Пробегаемся по каждой ссылке со странице
-            SiteMapBuilder task = new SiteMapBuilder(subLink); //Добавляем для неё новое задание
-            task.fork(); //Ответвляем её
-            subTasks.add(task); //И добавляем в лист заданий
+            if (!allUrl.contains(subLink)) {
+                synchronized (allUrl) {
+                    allUrl.add(subLink);
+                }
+                result.add(subLink);
+
+                SiteMapBuilder task = new SiteMapBuilder(subLink); //Добавляем для неё новое задание
+                task.fork(); //Ответвляем её
+                subTasks.add(task); //И добавляем в лист заданий
+            }
         }
         for (SiteMapBuilder task : subTasks) { //Джойним все задания в один Set
             result.addAll(task.join());
@@ -31,8 +40,8 @@ public class SiteMapBuilder extends RecursiveTask<Set<String>> {
         Set<String> mainPageLinks = new TreeSet<>();
 
         try {
-            Thread.sleep(300);
-            Document mainPage = Jsoup.connect(mainPageUrl).maxBodySize(0).get();
+            Thread.sleep(500);
+            Document mainPage = Jsoup.connect(mainPageUrl).maxBodySize(0).ignoreContentType(true).get();
             Elements links = mainPage.select("a[href]");
             links.forEach(l -> {
                 String currentLink = l.absUrl("href");
