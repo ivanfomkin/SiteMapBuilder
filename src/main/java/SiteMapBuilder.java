@@ -41,7 +41,9 @@ public class SiteMapBuilder extends RecursiveTask<Set<String>> {
 
         try {
             Thread.sleep(500);
-            Document mainPage = Jsoup.connect(mainPageUrl).maxBodySize(0).ignoreContentType(true).get();
+            Document mainPage = Jsoup.connect(mainPageUrl)
+                    .maxBodySize(0).ignoreContentType(true)
+                    .timeout(10 * 1000).get();
             Elements links = mainPage.select("a[href]");
             links.forEach(l -> {
                 String currentLink = l.absUrl("href");
@@ -49,7 +51,7 @@ public class SiteMapBuilder extends RecursiveTask<Set<String>> {
                     mainPageLinks.add(currentLink);
             });
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
         return mainPageLinks;
     }
